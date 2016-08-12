@@ -11,9 +11,7 @@ library(dplyr)
 wd <- path.expand("~/Documents/github/olympia")
 setwd(wd)
 
-country.medals.url <- "http://www.theolympicdatabase.nl/countries.php?reset=1&event_id=1"
-
-
+# pull country medals data for a specified Olympic event (1 = 1896 Athens)
 f.gen.olympic.data <- function(event = "1"){
   country.medals.url.base <- "http://www.theolympicdatabase.nl/countries.php?reset=1&event_id="
   country.medals.url <- paste0(country.medals.url.base, event)
@@ -49,8 +47,31 @@ f.gen.olympic.data <- function(event = "1"){
   return(dta)  
 }
 
-test <- f.gen.olympic.data(2)
-  
+
+# get medals data
+medals <- as.data.frame(NULL)
+
+
+# 19 Summergames London 1948
+
+# no data for 15-16-17
+# 17 1944 Summer London
+# 16 1940 Summer Tokyo
+# 15 1940 Winter Garmisch-Partenkirchen
+
+# 14 1936 Summer Berlin
+# 13 1936 Winter Garmisch-Partenkirchen
+games <- seq.int(49)
+games <- games[!games %in% c(15, 16, 17)]
+
+# run loop
+for(i in games){
+  medals <- bind_rows(medals, f.gen.olympic.data(i))
+}
+
+
+
+
 
 
 
