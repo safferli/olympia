@@ -13,21 +13,44 @@ setwd(wd)
 
 country.medals.url <- "http://www.theolympicdatabase.nl/countries.php?reset=1&event_id=1"
 
-medals.web <- read_html(country.medals.url)
 
-
-dta <- medals.web %>% 
-  # class="datagrid_header_table"
-  html_nodes("table .datagrid_header_table") %>% 
-  # only one table, so could also unlist()
-  .[[1]] %>% 
-  html_table(header = TRUE) %>% 
-  # make safe R column names: medal columns start with a space... ' Gold' :(
-  setNames(gsub("X.", "", make.names(names(.), unique = TRUE))) %>% 
-  select(Country, Gold, Silver, Bronze)
+f.gen.olympic.data <- function(event = "1"){
+  country.medals.url.base <- "http://www.theolympicdatabase.nl/countries.php?reset=1&event_id="
+  country.medals.url <- paste0(country.medals.url.base, event)
   
+  medals.web <- read_html(country.medals.url)
   
+  # get full event name
+  event <- medals.web %>% 
+    html_nodes("h3 b") %>% 
+    html_text()
+  
+  # get year of event: remove everything not a digit
+  year <- gsub("[^[:digit:]]", "", event)
+  
+  # summer or wintergames
+  type <- gsub(".* ([a-zA-Z]+games).*", "\\1", event)
+  
+  dta <- medals.web %>% 
+    # class="datagrid_header_table"
+    html_nodes("table .datagrid_header_table") %>% 
+    # only one table, so could also unlist()
+    .[[1]] %>% 
+    html_table(header = TRUE) %>% 
+    # make safe R column names: medal columns start with a space... ' Gold' :(
+    setNames(gsub("X.", "", make.names(names(.), unique = TRUE))) %>% 
+    select(Country, Gold, Silver, Bronze) %>% 
+    mutate(
+      year = year,
+      type = type, 
+      event = event
+    )
+  
+  return(dta)  
+}
 
+test <- f.gen.olympic.data(2)
+  
 
 
 
