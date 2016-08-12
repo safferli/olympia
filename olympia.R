@@ -69,6 +69,8 @@ for(i in games){
   medals <- bind_rows(medals, f.gen.olympic.data(i))
 }
 
+write.csv(medals, file = "olympic-medals.csv", row.names = FALSE)
+
 
 
 
