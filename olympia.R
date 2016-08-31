@@ -47,30 +47,56 @@ f.gen.olympic.data <- function(event = "1"){
   return(dta)  
 }
 
-
-# get medals data
-medals <- as.data.frame(NULL)
-
-
-# 19 Summergames London 1948
-
-# no data for 15-16-17
-# 17 1944 Summer London
-# 16 1940 Summer Tokyo
-# 15 1940 Winter Garmisch-Partenkirchen
-
-# 14 1936 Summer Berlin
-# 13 1936 Winter Garmisch-Partenkirchen
-games <- seq.int(49)
-games <- games[!games %in% c(15, 16, 17)]
-
-# run loop
-for(i in games){
-  medals <- bind_rows(medals, f.gen.olympic.data(i))
+# load data if exists, or pull new
+if(!file.exists("olympic-medals.csv")){
+  # get medals data
+  medals <- as.data.frame(NULL)
+  
+  # 19 Summergames London 1948
+  
+  # no data for 15-16-17
+  # 17 1944 Summer London
+  # 16 1940 Summer Tokyo
+  # 15 1940 Winter Garmisch-Partenkirchen
+  
+  # 14 1936 Summer Berlin
+  # 13 1936 Winter Garmisch-Partenkirchen
+  games <- seq.int(49)
+  games <- games[!games %in% c(15, 16, 17)]
+  
+  # run loop
+  for(i in games){
+    medals <- bind_rows(medals, f.gen.olympic.data(i))
+  }
+  
+  # write data
+  write.csv(medals, file = "olympic-medals.csv", row.names = FALSE)
+} else {
+  medals <- read.csv("olympic-medals.csv", stringsAsFactors = FALSE)
 }
 
-write.csv(medals, file = "olympic-medals.csv", row.names = FALSE)
 
+# get top5 countries of each event
+f.get.top5.countries <- function(years){
+  top5 <- medals %>% 
+    filter(Country != "TOTAL") %>% 
+    filter(year %in% years) %>% 
+    group_by(year, type) %>% 
+    #top_n(5, wt = Gold)
+    slice(1:5) %>% 
+    ungroup() %>% 
+    group_by(Country) %>% 
+    tally(sort = TRUE)
+  return(top5$Country)
+}
+
+# medals per country
+medals %>% 
+  filter(type == "Summergames") %>% 
+  filter(Country %in% f.get.top5.countries(1896:1950)) %>% 
+  mutate(medals = Gold+Silver+Bronze) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=medals, colour = Country))
 
 
 
