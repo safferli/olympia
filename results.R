@@ -60,10 +60,13 @@ f.get.bbc.nonknockout.results <- function(link){
 }
 
 
+# non-knockout events (easier to calculate ranks)
+nonknockouts <- events %>% filter(!sport %in% knockout.results) 
+
 dta <- list()
 
-for(i in events %>% filter(!sport %in% knockout.results) %>% .$link){
-  dta[[i]] <- f.get.bbc.nonknockout.results(i)
+for(i in seq.int(nrow(nonknockouts))){
+  dta[[i]] <- f.get.bbc.nonknockout.results(nonknockouts[i, "link"])
 }
 
 
