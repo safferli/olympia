@@ -48,11 +48,17 @@ knockout.results <- c("archery", "badminton", "basketball",
 f.get.bbc.nonknockout.results <- function(link){
   dta <- read_html(link) %>%
     # get first <div> after <h3>Final</h3>
-    html_node(xpath = "//h3[contains(., 'Final')]/following-sibling::div") %>% 
+    #html_node(xpath = "//h3[contains(., 'Final') or contains(., 'Results')]/following-sibling::div") %>% 
+    # http://stackoverflow.com/questions/8808921/selecting-a-css-class-with-xpath
+    # http://dubinko.info/blog/2007/10/01/simple-parsing-of-space-seprated-attributes-in-xpathxslt/
+    # first h3 element of class = heading, pick the div that follows
+    #html_node(xpath = "(//h3[contains(concat(' ', normalize-space(@class), ' '), ' heading ')])[1]/following-sibling::div") %>% 
+    html_node(xpath = "(//div[contains(concat(' ', normalize-space(@class), ' '), ' table-container ')])[1]") %>% 
     # get table from div
     html_node("table") %>% 
-    # convert into dataframe
-    html_table() %>% 
+    # convert into dataframe, header = FALSE because of mens-synchronised-3m-springboard :(
+    # fill = TRUE because of synchronised-swimming/duets
+    html_table(header = FALSE, fill = TRUE) %>% 
     mutate(
       sport = events[events$link == link, "sport"],
       event = events[events$link == link, "event"]
@@ -60,18 +66,36 @@ f.get.bbc.nonknockout.results <- function(link){
 }
 
 
-# non-knockout events (easier to calculate ranks)
-nonknockouts <- events %>% filter(!sport %in% knockout.results) 
 
-dta <- list()
+# non-knockout events (easier to calculate ranks)
+nonknockouts <- events %>% 
+  # manual list of knockout round sports
+  filter(!sport %in% knockout.results) %>% 
+  # these seem to have have knockout rounds
+  filter(!(sport == "cycling" & event %in% c("mens-sprint", "womens-sprint", "mens-team-pursuit", "womens-team-pursuit"))) %>% 
+  # these tables are empty :(
+  filter(!sport == "football") 
+
+dta.ll <- list()
 
 for(i in seq.int(nrow(nonknockouts))){
-  dta[[i]] <- f.get.bbc.nonknockout.results(nonknockouts[i, "link"])
+  dta.ll[[i]] <- f.get.bbc.nonknockout.results(nonknockouts[i, "link"])
 }
 
+save(dta.ll, file = "bbc-nonknockouts.Rdata")
 
+dta.raw <- lapply(dta.ll, function(df){
+  # get first row as header names
+  header <- df[1,]
+  # rename last two columns to "sport", "event"
+  l <- length(header)
+  header[(l-1):l] <- c("sport", "event")
+  # make R-safe column names, remove first row
+  setNames(df[-1,], make.names(header))
+})
 
-
-
+# (roughly) get all versions of each column name (eg "Rank", "Ranking", "Position")
+# nn <- bind_rows(lapply(dta.raw, function(x){as.data.frame(t(names(x)))}))
+# apply(nn, 2, unique)
 
 
