@@ -116,10 +116,33 @@ dta.nk <- lapply(dta.raw, function(df){
 # manually check: 
 # 86-91 (horses)
 # 105, 125, 160, 187
+# find out which DF does not have a "result" variable: 
+# dta.nk[which(
+#   sapply(dta.nk, function(df){
+#     !any(grepl("result", names(df)))
+#   })
+# )]
 
-dta.nk[which(
-  sapply(dta.nk, function(df){
-    !any(grepl("result", names(df)))
-  })
-)]
+# athletics/womens-hammer-throw
+dta.nk[[45]] <- setNames(dta.nk[[45]], c("rank", "country", "names", "result", "sport", "event"))
+# equestrian/eventing-team
+dta.nk[[86]] <- setNames(dta.nk[[86]], c("rank", "country", "V1", "V2", "result", "sport", "event"))
+# equestrian/jumping-team
+dta.nk[[90]] <- setNames(dta.nk[[90]], c("rank", "country", "result", "sport", "event"))
+# gymnastics/womens-team lost it's first row because the table has no headers
+dta.nk[[105]] <- setNames(dta.nk[[105]], c("rank", "country", "result", "sport", "event"))
+dta.nk[[105]] <- bind_rows(
+  # manually create first row again
+  data.frame(rank = 1, country = "United States", result = 184.897, sport = "gymnastics", event = "womens-team", stringsAsFactors = FALSE),
+  dta.nk[[105]]
+)
+# rowing/womens-quadruple-sculls
+dta.nk[[125]] <- setNames(dta.nk[[105]], c("rank", "country", "result", "sport", "event"))
+# swimming/womens-200m-breaststroke
+dta.nk[[160]] <- setNames(dta.nk[[160]], c("rank", "names", "country", "result", "sport", "event"))
+# synchronised-swimming/duets
+dta.nk[[187]] <- setNames(dta.nk[[187]], c("rank", "country", "names", "V1", "V2", "result", "points.behind", "sport", "event"))
+
+
+
 
