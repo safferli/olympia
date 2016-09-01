@@ -112,3 +112,14 @@ dta.nk <- lapply(dta.raw, function(df){
   names(df) <- namekey[names(df)]
   return(df)
 })
+
+# manually check: 
+# 86-91 (horses)
+# 105, 125, 160, 187
+
+dta.nk[which(
+  sapply(dta.nk, function(df){
+    !any(grepl("result", names(df)))
+  })
+)]
+
