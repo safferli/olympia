@@ -40,11 +40,6 @@ knockout.results <- c("archery", "badminton", "basketball",
 
 
 
-
-
-
-#sw <- "http://www.bbc.com/sport/olympics/rio-2016/results/sports/swimming/womens-800m-freestyle"
-
 f.get.bbc.nonknockout.results <- function(link){
   dta <- read_html(link) %>%
     # get first <div> after <h3>Final</h3>
@@ -98,4 +93,21 @@ dta.raw <- lapply(dta.ll, function(df){
 # nn <- bind_rows(lapply(dta.raw, function(x){as.data.frame(t(names(x)))}))
 # apply(nn, 2, unique)
 
+# check lapply(dta.raw, names) for name overview... 
+# http://stackoverflow.com/questions/34275576/avoiding-error-when-using-rename-in-dplyr-and-column-doesnt-exist
+namekey <- c(
+  Rank = "rank", Ranking = "rank", Position = "rank",
+  Country = "country", Nation = "country",
+  Name = "names", Names = "names", Athlete = "names", Athletes = "names", 
+  # many, many different result variables... :( 
+  Result = "result", Results = "result", Total = "result",
+  Time = "result", Points = "result", Distance..m. = "result", Height = "result", Distance = "result", 
+  Height..m. = "result", Throw..m. = "result", Score = "result", Pts = "result", 
+  Final.score = "result", Net.points = "result", Final.points = "result", Overall.time = "result",
+  # phew...
+  sport = "sport", event = "event"
+)
 
+dta.nk <- lapply(dta.raw, function(df){
+  names(df) <- namekey[names(df)]
+})
