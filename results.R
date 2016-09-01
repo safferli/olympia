@@ -110,4 +110,5 @@ namekey <- c(
 
 dta.nk <- lapply(dta.raw, function(df){
   names(df) <- namekey[names(df)]
+  return(df)
 })
