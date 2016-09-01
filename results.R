@@ -77,7 +77,7 @@ for(i in seq.int(nrow(nonknockouts))){
   dta.ll[[i]] <- f.get.bbc.nonknockout.results(nonknockouts[i, "link"])
 }
 
-save(dta.ll, file = "bbc-nonknockouts.Rdata")
+save(events, dta.ll, file = "bbc-nonknockouts.Rdata")
 
 dta.raw <- lapply(dta.ll, function(df){
   # get first row as header names
