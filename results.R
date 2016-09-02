@@ -70,6 +70,9 @@ if(!file.exists("bbc-nonknockouts.Rdata")){
     # these tables are empty :(
     filter(!sport == "football") 
   
+  # the non-nonknockouts are thus the knockouts :) 
+  knockouts <- dplyr::setdiff(events, nonknockouts)
+  
   ##
   ## download non-knockout results
   ## 
@@ -80,7 +83,7 @@ if(!file.exists("bbc-nonknockouts.Rdata")){
   }
   
   # save data to avoid re-pulling
-  save(events, dta.nk.ll, file = "bbc-nonknockouts.Rdata")
+  save(events, dta.nk.ll, knockouts, nonknockouts, file = "bbc-nonknockouts.Rdata")
 } else {
   load("bbc-nonknockouts.Rdata")
 }
@@ -120,6 +123,14 @@ dta.nk <- lapply(dta.nk.raw, function(df){
   names(df) <- namekey[names(df)]
   # some NA column names left, clean these up
   df <- setNames(df, make.names(names(df), unique = TRUE))
+  # bind_rows chokes on chr and num later... with these columns; make them chr now
+  for(i in paste0("NA..", 1:6)){
+    if(any(grepl(i, names(df)))){
+      df[, i] <- as.character(df[, i])
+    }
+  }
+  # make first column (rank) always chr; some have "Gold" as rank 1
+  df[, 1] <- as.character(df[, 1])
   return(df)
 })
 
@@ -148,7 +159,7 @@ dta.nk[[90]] <- setNames(dta.nk[[90]], c("rank", "country", "result", "sport", "
 dta.nk[[105]] <- setNames(dta.nk[[105]], c("rank", "country", "result", "sport", "event"))
 dta.nk[[105]] <- bind_rows(
   # manually create first row again
-  data.frame(rank = 1, country = "United States", result = 184.897, sport = "gymnastics", event = "womens-team", stringsAsFactors = FALSE),
+  data.frame(rank = "1", country = "United States", result = "184.897", sport = "gymnastics", event = "womens-team", stringsAsFactors = FALSE),
   dta.nk[[105]]
 )
 # rowing/womens-quadruple-sculls
@@ -158,11 +169,27 @@ dta.nk[[160]] <- setNames(dta.nk[[160]], c("rank", "names", "country", "result",
 # synchronised-swimming/duets
 dta.nk[[187]] <- setNames(dta.nk[[187]], c("rank", "country", "names", "V1", "V2", "result", "points.behind", "sport", "event"))
 
+#test <- dta.nk[[112]]
+
 ##
 ## manual check and clean-up finished
 ##
 
+# non-knockout round data finally! :) 
+dta <- bind_rows(dta.nk) %>% 
+  select(
+    sport, event, rank, country, result, names, everything()
+  )
 
+
+
+
+
+
+
+
+
+#### knockout data
 
 
 
