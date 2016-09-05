@@ -12,7 +12,7 @@ wd <- path.expand("~/Documents/github/olympia")
 setwd(wd)
 
 
-if(!file.exists("bbc-nonknockouts.Rdata")){
+if(!file.exists("bbc-olympics-data.Rdata")){
   # base BBC sports Rio 2016 page
   bbc.rio2016 <- "http://www.bbc.com/sport/olympics/36373149"
   
@@ -116,9 +116,9 @@ if(!file.exists("bbc-nonknockouts.Rdata")){
   
   
   # save data to avoid re-pulling
-  save(events, dta.nk.ll, dta.ko.ll, knockouts, nonknockouts, file = "bbc-olympics data.Rdata")
+  save(events, dta.nk.ll, dta.ko.ll, knockouts, nonknockouts, file = "bbc-olympics-data.Rdata")
 } else {
-  load("bbc-olympics data.Rdata")
+  load("bbc-olympics-data.Rdata")
 }
 
 ##
@@ -262,6 +262,8 @@ f.clean.knockout.results <- function(df){
   
   return(ko)
 }
+
+dta.ko <- lapply(dta.ko.ll, function(x) f.clean.knockout.results(x))
 
 
 ## 
