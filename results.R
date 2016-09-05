@@ -179,17 +179,65 @@ dta.nk[[187]] <- setNames(dta.nk[[187]], c("rank", "country", "names", "V1", "V2
 dta <- bind_rows(dta.nk) %>% 
   select(
     sport, event, rank, country, result, names, everything()
-  )
-
-
-
-
-
-
+  ) %>% 
+  mutate(
+    # TODO: for some reason tons of ws left
+    rank = if_else(trimws(rank) == "Gold", "1", trimws(rank)), 
+    rank = if_else(rank == "Silver", "2", rank),
+    rank = if_else(rank == "Bronze", "3", rank)
+    )
 
 
 
 #### knockout data
+
+
+
+
+
+link <- knockouts[5, "link"]
+
+f.get.bbc.knockout.results <- function(link){
+  tdta <- read_html(link) %>%
+    #html_node(xpath = "//*[contains(concat(' ', normalize-space(@class), ' '), ' layout__ghost-column '))]") %>% 
+    html_table(fill = TRUE) 
+  # make R-safe column names (Name+Country headers are duplicated)
+  tdta <- lapply(tdta, function(df){
+    setNames(df, make.names(names(df), unique = TRUE))
+  })
+  # get finals, bronze medal match, semi- and quarter-finals (top 8 players)  
+  bind_rows(tdta[1:4]) %>% 
+    mutate(
+      sport = events[events$link == link, "sport"],
+      event = events[events$link == link, "event"]
+  )
+}
+
+
+test <- f.get.bbc.knockout.results(knockouts[5, "link"])
+
+tt <- test %>% 
+  tidyr::separate(Result, c("left.result", "right.result"), sep = "-", remove = FALSE) %>% 
+  mutate(
+    left.name = paste(Name, Country, sep = ", "),
+    right.name = paste(Name.1, Country.1, sep = ", "),
+    tmp.rank = row_number()
+    )
+
+
+# returns the index of the larger element of a result of the format "a-b"
+# e.g. "2" if the result is "1-2"
+f.get.winner.index <- function(result, num = 1){
+  # gsub("(\\d)\\-(\\d)", paste0("\\", num), x)
+  which.max(unlist(strsplit(result, split = "-")))
+}
+
+
+gsub("(\\d)\\-(\\d)", "\\2", "2-1")
+
+
+f.get.winner.index("11-22")
+
 
 
 
