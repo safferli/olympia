@@ -84,12 +84,46 @@ if(!file.exists("bbc-nonknockouts.Rdata")){
     dta.nk.ll[[i]] <- f.get.bbc.nonknockout.data(nonknockouts[i, "link"])
   }
   
+  ##
+  ## download knockout results
+  ##
+  
+  # get knockout results - top 8
+  f.get.bbc.knockout.data <- function(link){
+    tdta <- read_html(link) %>%
+      #html_node(xpath = "//*[contains(concat(' ', normalize-space(@class), ' '), ' layout__ghost-column '))]") %>% 
+      html_table(fill = TRUE) 
+    # make R-safe column names (Name+Country headers are duplicated)
+    tdta <- lapply(tdta, function(df){
+      setNames(df, make.names(names(df), unique = TRUE))
+    })
+    # get finals, bronze medal match, semi- and quarter-finals (top 8 players)  
+    bind_rows(tdta[1:4]) %>% 
+      mutate(
+        sport = events[events$link == link, "sport"],
+        event = events[events$link == link, "event"]
+      )
+  }
+  
+  ## actual knockout data loop
+  dta.ko.ll <- list()
+  for(i in seq.int(nrow(knockouts))){
+    dta.ko.ll[[i]] <- f.get.bbc.knockout.data(knockouts[i, "link"])
+  }
+  
+  
+  
+  
+  
   # save data to avoid re-pulling
-  save(events, dta.nk.ll, knockouts, nonknockouts, file = "bbc-nonknockouts.Rdata")
+  save(events, dta.nk.ll, dta.ko.ll, knockouts, nonknockouts, file = "bbc-olympics data.Rdata")
 } else {
-  load("bbc-nonknockouts.Rdata")
+  load("bbc-olympics data.Rdata")
 }
 
+##
+## clean non-knockout data
+##
 
 dta.nk.raw <- lapply(dta.nk.ll, function(df){
   # get first row as header names
@@ -177,41 +211,11 @@ dta.nk[[187]] <- setNames(dta.nk[[187]], c("rank", "country", "names", "V1", "V2
 ## manual check and clean-up finished
 ##
 
-# non-knockout round data finally! :) 
-dta <- bind_rows(dta.nk) %>% 
-  select(
-    sport, event, rank, country, result, names, everything()
-  ) %>% 
-  mutate(
-    # TODO: for some reason tons of ws left
-    rank = if_else(trimws(rank) == "Gold", "1", trimws(rank)), 
-    rank = if_else(rank == "Silver", "2", rank),
-    rank = if_else(rank == "Bronze", "3", rank)
-    )
 
 
 ##
-#### knockout data
+## clean knockout data
 ##
-
-
-
-# get knockout results - top 8
-f.get.bbc.knockout.data <- function(link){
-  tdta <- read_html(link) %>%
-    #html_node(xpath = "//*[contains(concat(' ', normalize-space(@class), ' '), ' layout__ghost-column '))]") %>% 
-    html_table(fill = TRUE) 
-  # make R-safe column names (Name+Country headers are duplicated)
-  tdta <- lapply(tdta, function(df){
-    setNames(df, make.names(names(df), unique = TRUE))
-  })
-  # get finals, bronze medal match, semi- and quarter-finals (top 8 players)  
-  bind_rows(tdta[1:4]) %>% 
-    mutate(
-      sport = events[events$link == link, "sport"],
-      event = events[events$link == link, "event"]
-  )
-}
 
 # returns the index of the larger element of a result of the format "a-b"
 # e.g. "2" if the result is "1-2"
@@ -260,17 +264,21 @@ f.clean.knockout.results <- function(df){
 }
 
 
-# tt <- f.get.bbc.knockout.data(knockouts[5, "link"])
-# df <- tt
+## 
+## combine to get full data
+## 
 
-
-dta.ko.ll <- list()
-for(i in seq.int(nrow(knockouts))){
-  dta.ko.ll[[i]] <- f.get.bbc.knockout.data(nonknockouts[i, "link"])
-}
-
-
-
+# non-knockout round data finally! :) 
+dta <- bind_rows(dta.nk) %>% 
+  select(
+    sport, event, rank, country, result, names, everything()
+  ) %>% 
+  mutate(
+    # TODO: for some reason tons of ws left
+    rank = if_else(trimws(rank) == "Gold", "1", trimws(rank)), 
+    rank = if_else(rank == "Silver", "2", rank),
+    rank = if_else(rank == "Bronze", "3", rank)
+  )
 
 
 
