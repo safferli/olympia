@@ -2,10 +2,10 @@ rm(list = ls()); gc(); gc()
 options(bitmapType='cairo')
 options(scipen = 999)
 
-library(ggplot2)
+#library(ggplot2)
 library(rvest)
 library(dplyr)
-#library(tidyr)
+library(tidyr)
 
 # Define your workspace: "X:/xxx/"
 wd <- path.expand("~/Documents/github/olympia")
@@ -41,7 +41,7 @@ if(!file.exists("bbc-nonknockouts.Rdata")){
                         "judo", "rugby-sevens", "table-tennis", "taekwondo", 
                         "tennis", "volleyball", "water-polo", "wrestling")
   
-  f.get.bbc.nonknockout.results <- function(link){
+  f.get.bbc.nonknockout.data <- function(link){
     dta <- read_html(link) %>%
       # get first <div> after <h3>Final</h3>
       #html_node(xpath = "//h3[contains(., 'Final') or contains(., 'Results')]/following-sibling::div") %>% 
@@ -79,7 +79,7 @@ if(!file.exists("bbc-nonknockouts.Rdata")){
   
   dta.nk.ll <- list()
   for(i in seq.int(nrow(nonknockouts))){
-    dta.nk.ll[[i]] <- f.get.bbc.nonknockout.results(nonknockouts[i, "link"])
+    dta.nk.ll[[i]] <- f.get.bbc.nonknockout.data(nonknockouts[i, "link"])
   }
   
   # save data to avoid re-pulling
@@ -188,16 +188,14 @@ dta <- bind_rows(dta.nk) %>%
     )
 
 
-
+##
 #### knockout data
+##
 
 
 
-
-
-link <- knockouts[5, "link"]
-
-f.get.bbc.knockout.results <- function(link){
+# get knockout results - top 8
+f.get.bbc.knockout.data <- function(link){
   tdta <- read_html(link) %>%
     #html_node(xpath = "//*[contains(concat(' ', normalize-space(@class), ' '), ' layout__ghost-column '))]") %>% 
     html_table(fill = TRUE) 
@@ -213,30 +211,63 @@ f.get.bbc.knockout.results <- function(link){
   )
 }
 
-
-test <- f.get.bbc.knockout.results(knockouts[5, "link"])
-
-tt <- test %>% 
-  tidyr::separate(Result, c("left.result", "right.result"), sep = "-", remove = FALSE) %>% 
-  mutate(
-    left.name = paste(Name, Country, sep = ", "),
-    right.name = paste(Name.1, Country.1, sep = ", "),
-    tmp.rank = row_number()
-    )
-
-
 # returns the index of the larger element of a result of the format "a-b"
 # e.g. "2" if the result is "1-2"
-f.get.winner.index <- function(result, num = 1){
+f.get.winner.index <- function(result){
   # gsub("(\\d)\\-(\\d)", paste0("\\", num), x)
   which.max(unlist(strsplit(result, split = "-")))
 }
 
+# build clean ranking of the ko-results (places 5-8 are tied to 5)
+f.clean.knockout.results <- function(df){
+  df <- df %>% 
+    #tidyr::separate(Result, c("left.result", "right.result"), sep = "-", remove = FALSE) %>% 
+    mutate(
+      left.name = paste(Name, Country, sep = ", "),
+      right.name = paste(Name.1, Country.1, sep = ", ")
+    )  
+  
+  # finals
+  winners <- c(df[1, "left.name"], df[1, "right.name"])
+  # if right.name won, switch places in winners vector 
+  if(f.get.winner.index(df[1, "Result"]) == 2){
+    winners[c(1, 2)] <- winners[c(2, 1)]
+  }
+  
+  # "loser's final"; match for 3rd place
+  winners <- c(winners, c(df[2, "left.name"], df[2, "right.name"]))
+  # if right.name won, switch places
+  if(f.get.winner.index(df[2, "Result"]) == 2){
+    winners[c(3, 4)] <- winners[c(4, 3)]
+  }
+  
+  # places 5-8: all 8, minus the winners
+  participants <- unique(c(df$left.name, df$right.name))
+  losers <- participants[!participants %in% winners]
+  
+  ko <- data.frame(
+    participants = c(winners, losers), 
+    rank = c(1:4, rep(5, 4)), 
+    sport = df[1, "sport"], 
+    event = df[1, "event"],
+    stringsAsFactors = FALSE
+  ) %>% 
+    tidyr::separate(participants, into = c("names", "country"), sep = ", ")
+  
+  return(ko)
+}
 
-gsub("(\\d)\\-(\\d)", "\\2", "2-1")
+
+# tt <- f.get.bbc.knockout.data(knockouts[5, "link"])
+# df <- tt
 
 
-f.get.winner.index("11-22")
+dta.ko.ll <- list()
+for(i in seq.int(nrow(knockouts))){
+  dta.ko.ll[[i]] <- f.get.bbc.knockout.data(nonknockouts[i, "link"])
+}
+
+
 
 
 
