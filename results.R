@@ -41,6 +41,23 @@ if(!file.exists("bbc-nonknockouts.Rdata")){
                         "judo", "rugby-sevens", "table-tennis", "taekwondo", 
                         "tennis", "volleyball", "water-polo", "wrestling")
   
+  # non-knockout events (easier to calculate ranks)
+  nonknockouts <- events %>% 
+    # manual list of knockout round sports
+    filter(!sport %in% knockout.results) %>% 
+    # these seem to have have knockout rounds
+    filter(!(sport == "cycling" & event %in% c("mens-sprint", "womens-sprint", "mens-team-pursuit", "womens-team-pursuit"))) %>% 
+    # these tables are empty :(
+    filter(!sport == "football") 
+  
+  # the non-nonknockouts are thus the knockouts :) 
+  knockouts <- dplyr::setdiff(events, nonknockouts)
+
+  
+  ##
+  ## download non-knockout results
+  ## 
+  
   f.get.bbc.nonknockout.data <- function(link){
     dta <- read_html(link) %>%
       # get first <div> after <h3>Final</h3>
@@ -61,22 +78,7 @@ if(!file.exists("bbc-nonknockouts.Rdata")){
       )
   }
   
-  # non-knockout events (easier to calculate ranks)
-  nonknockouts <- events %>% 
-    # manual list of knockout round sports
-    filter(!sport %in% knockout.results) %>% 
-    # these seem to have have knockout rounds
-    filter(!(sport == "cycling" & event %in% c("mens-sprint", "womens-sprint", "mens-team-pursuit", "womens-team-pursuit"))) %>% 
-    # these tables are empty :(
-    filter(!sport == "football") 
-  
-  # the non-nonknockouts are thus the knockouts :) 
-  knockouts <- dplyr::setdiff(events, nonknockouts)
-  
-  ##
-  ## download non-knockout results
-  ## 
-  
+  ## actual download loop here
   dta.nk.ll <- list()
   for(i in seq.int(nrow(nonknockouts))){
     dta.nk.ll[[i]] <- f.get.bbc.nonknockout.data(nonknockouts[i, "link"])
