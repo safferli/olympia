@@ -105,6 +105,13 @@ if(!file.exists("bbc-olympics-data.Rdata")){
       names(df) <- namekey.ko[names(df)]
       # make R-safe column names (Name+Country headers are duplicated)
       df <- setNames(df, make.names(names(df), unique = TRUE))
+      # convert all to chr for merging
+      for(i in c("result", "NA.")){
+        if(any(grepl(i, names(df)))){
+          df[, i] <- as.character(df[, i])
+        }
+      }
+      return(df)
     })
     # get finals, bronze medal match, semi- and quarter-finals (top 8 players)  
     bind_rows(tdta[1:4]) %>% 
@@ -119,9 +126,6 @@ if(!file.exists("bbc-olympics-data.Rdata")){
   for(i in seq.int(nrow(knockouts))){
     dta.ko.ll[[i]] <- f.get.bbc.knockout.data(knockouts[i, "link"])
   }
-  
-  
-  
   
   
   # save data to avoid re-pulling
@@ -226,12 +230,44 @@ dta.nk[[187]] <- setNames(dta.nk[[187]], c("rank", "country", "names", "V1", "V2
 ## clean knockout data
 ##
 
+# most stuff already cleaned in get-data, since we bind_rows()
+dta.ko <- dta.ko.ll
+
+
+##
+## big list of manual fixing
+## 
+
+# boxing/mens-super-heavy-plus-91kg
+dta.ko[[21]] <- dta.ko[[21]] %>% mutate(result = if_else(is.na(result), NA., result)) %>% 
+  select(names, country, result, names.1, country.1, sport, event)
+# judo/women-52kg
+# somehow this has 2 bronze medals? 
+dta.ko[[53]] <- setNames(dta.ko[[53]], c("names", "country", "result", "names.1", "country.1", "sport", "event"))
+# judo/women-63kg
+dta.ko[[55]] <- setNames(dta.ko[[53]], c("names", "country", "result", "names.1", "country.1", "sport", "event"))
+# judo/men-81kg
+dta.ko[[48]] <- setNames(dta.ko[[48]], c("names", "country", "result", "names.1", "country.1", "sport", "event"))
+# judo/men-66kg
+dta.ko[[46]] <- setNames(dta.ko[[46]], c("names", "country", "result", "names.1", "country.1", "sport", "event"))
+# 39, 40: football, empty table
+# 45 http://www.bbc.com/sport/olympics/rio-2016/results/sports/judo/men-60kg
+# 20
+
+##
+## manual check and clean-up finished
+##
+
+
 # returns the index of the larger element of a result of the format "a-b"
 # e.g. "2" if the result is "1-2"
 f.get.winner.index <- function(result){
   # gsub("(\\d)\\-(\\d)", paste0("\\", num), x)
   which.max(unlist(strsplit(result, split = "-")))
 }
+
+# also has "bt" and "lost to"
+
 
 # build clean ranking of the ko-results (places 5-8 are tied to 5)
 f.clean.knockout.results <- function(df){
