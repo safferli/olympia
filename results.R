@@ -90,12 +90,21 @@ if(!file.exists("bbc-olympics-data.Rdata")){
   
   # get knockout results - top 8
   f.get.bbc.knockout.data <- function(link){
+    # get data from web
     tdta <- read_html(link) %>%
       #html_node(xpath = "//*[contains(concat(' ', normalize-space(@class), ' '), ' layout__ghost-column '))]") %>% 
       html_table(fill = TRUE) 
-    # make R-safe column names (Name+Country headers are duplicated)
+    # harmonise column names
+    namekey.ko <- c(
+      Result = "result", Score = "result", Time = "result",
+      Country = "country", 
+      Name = "names", Names = "names", Athlete = "names", Athletes = "names"
+    )
     tdta <- lapply(tdta, function(df){
-      setNames(df, make.names(names(df), unique = TRUE))
+      # rename columns according to namekey
+      names(df) <- namekey.ko[names(df)]
+      # make R-safe column names (Name+Country headers are duplicated)
+      df <- setNames(df, make.names(names(df), unique = TRUE))
     })
     # get finals, bronze medal match, semi- and quarter-finals (top 8 players)  
     bind_rows(tdta[1:4]) %>% 
@@ -141,7 +150,7 @@ dta.nk.raw <- lapply(dta.nk.ll, function(df){
 
 # check lapply(dta.raw, names) for name overview... 
 # http://stackoverflow.com/questions/34275576/avoiding-error-when-using-rename-in-dplyr-and-column-doesnt-exist
-namekey <- c(
+namekey.nk <- c(
   Rank = "rank", Ranking = "rank", Position = "rank",
   Country = "country", Nation = "country",
   Name = "names", Names = "names", Athlete = "names", Athletes = "names", 
@@ -156,7 +165,7 @@ namekey <- c(
 
 dta.nk <- lapply(dta.nk.raw, function(df){
   # rename columns according to namekey
-  names(df) <- namekey[names(df)]
+  names(df) <- namekey.nk[names(df)]
   # some NA column names left, clean these up
   df <- setNames(df, make.names(names(df), unique = TRUE))
   # bind_rows chokes on chr and num later... with these columns; make them chr now
